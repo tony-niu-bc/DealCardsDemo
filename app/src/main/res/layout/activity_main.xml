@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.wzhnsc.dealcardsdemo.CardsContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:container="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cc_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:splitMotionEvents="false"
+    container:childMarginTop="48dp"
+    container:yOffsetDist="26dp"
+    >
+
+    <com.wzhnsc.dealcardsdemo.Cards
+        xmlns:card="http://schemas.android.com/apk/res-auto"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        card:number="1"
+        />
+
+    <com.wzhnsc.dealcardsdemo.Cards
+        xmlns:card="http://schemas.android.com/apk/res-auto"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        card:number="2"
+        />
+
+    <com.wzhnsc.dealcardsdemo.Cards
+        xmlns:card="http://schemas.android.com/apk/res-auto"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        card:number="3"
+        />
+
+    <com.wzhnsc.dealcardsdemo.Cards
+        xmlns:card="http://schemas.android.com/apk/res-auto"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        card:number="4"
+        />
+
+</com.wzhnsc.dealcardsdemo.CardsContainer>

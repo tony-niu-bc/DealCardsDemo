@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="container">
+
+        <attr
+            name="childMarginTop"
+            format="dimension"
+            />
+
+        <attr
+            name="yOffsetDist"
+            format="dimension"
+            />
+
+    </declare-styleable>
+
+    <declare-styleable name="card">
+
+        <attr
+            name="number"
+            format="integer"
+            />
+
+    </declare-styleable>
+
+</resources>
