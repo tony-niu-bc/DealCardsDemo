@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:splitMotionEvents="false"
-    container:childMarginTop="48dp"
-    container:yOffsetDist="26dp"
+    android:gravity="center"
+    container:overlapOffsetDist="13dp"
     >
 
     <com.wzhnsc.dealcardsdemo.Cards

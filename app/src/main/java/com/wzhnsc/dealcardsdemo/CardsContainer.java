@@ -8,6 +8,7 @@ import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
 import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -39,13 +40,15 @@ public class CardsContainer extends ViewGroup {
     private int mTopChildRawLeft = 0;
     private int mTopChildRawTop = 0;
 
-    // 获取最顶部子视图原始宽度
+    // 获取最顶部子视图原始宽高
     private int mTopChildRawWidth = 0;
+    private int mTopChildRawHight = 0;
 
-    // 最顶部视图距离容器顶部的偏移量(可通过属性改变)
-    private int mChildMarginTop = 10;
-    // (可通过属性改变)
-    private int mYOffsetDist = 100;
+    // 子视图所居位置（暂时只支持居左和居中）
+    private int mGravity = Gravity.START;
+
+    // 子视图间的叠加偏移量(可通过属性改变)
+    private int mOverlapOffsetDist = 100;
 
     // 判断是否滑动的阈值(单位是像素)
     private int mTouchSlop = 5;
@@ -69,8 +72,8 @@ public class CardsContainer extends ViewGroup {
         super(context, attrs, defStyle);
 
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.container);
-        mChildMarginTop = (int)a.getDimension(R.styleable.container_childMarginTop, mChildMarginTop);
-        mYOffsetDist    = (int)a.getDimension(R.styleable.container_yOffsetDist,    mYOffsetDist);
+        mOverlapOffsetDist = (int)a.getDimension(R.styleable.container_overlapOffsetDist, mOverlapOffsetDist);
+        mGravity           = a.getInt(R.styleable.container_android_gravity, -1);
         a.recycle();
 
         ViewConfiguration configuration = ViewConfiguration.get(getContext());
@@ -131,13 +134,13 @@ public class CardsContainer extends ViewGroup {
                 }
 
                 View underView = mChildrenViewList.get(index + 1);
-                underView.offsetTopAndBottom(((int)(mYOffsetDist + (0 - mYOffsetDist) * rate1)) - underView.getTop() + mTopChildRawTop);
+                underView.offsetTopAndBottom(((int)(mOverlapOffsetDist + (0 - mOverlapOffsetDist) * rate1)) - underView.getTop() + mTopChildRawTop);
                 underView.setScaleX(0.94f + (0.06f * rate1));
                 underView.setScaleY(0.94f + (0.06f * rate1));
 
                 if ((index + 2) < mChildrenViewList.size()) {
                     View underView2 = mChildrenViewList.get(index + 2);
-                    underView2.offsetTopAndBottom(((int)((mYOffsetDist * 2) + (0 - mYOffsetDist) * rate2)) - underView.getTop() + mTopChildRawTop);
+                    underView2.offsetTopAndBottom(((int)((mOverlapOffsetDist * 2) + (0 - mOverlapOffsetDist) * rate2)) - underView.getTop() + mTopChildRawTop);
                     underView2.setScaleX(0.88f + (0.06f * rate2));
                     underView2.setScaleY(0.88f + (0.06f * rate2));
                 }
@@ -316,8 +319,24 @@ public class CardsContainer extends ViewGroup {
 
     // 调整子视图的位置
     private void adjustChildrenPosition() {
-        final int parentLeft = getPaddingLeft();
-        final int parentTop  = getPaddingTop();
+        int parentLeft = getPaddingLeft();
+        int parentTop  = getPaddingTop();
+
+        // 获取最顶层子视图原始位置坐标
+        mTopChildRawLeft = mChildrenViewList.get(0).getLeft();
+        mTopChildRawTop  = mChildrenViewList.get(0).getTop();
+
+        // 获取最顶层子视图原始宽度
+        mTopChildRawWidth = mChildrenViewList.get(0).getMeasuredWidth();
+        mTopChildRawHight = mChildrenViewList.get(0).getMeasuredHeight();
+
+        if (Gravity.CENTER == mGravity) {
+            // 叠层偏移延伸出的宽度
+            int overlapOffsetWidth = mOverlapOffsetDist * (mChildrenViewList.size() - 1);
+
+            parentLeft += (mContainerWidth  - getPaddingRight()  - mTopChildRawWidth - overlapOffsetWidth) / 2;
+            parentTop  += (mContainerHeight - getPaddingBottom() - mTopChildRawHight - overlapOffsetWidth) / 2;
+        }
 
         for (int i = 0; i < mChildrenViewList.size(); i++) {
             View childView   = mChildrenViewList.get(i);
@@ -327,21 +346,14 @@ public class CardsContainer extends ViewGroup {
 
             childView.layout(parentLeft, parentTop, parentLeft + childWidth, parentTop + childHeight);
 
-            childView.offsetLeftAndRight(mYOffsetDist * i);
-            childView.offsetTopAndBottom(mYOffsetDist * i);
+            childView.offsetLeftAndRight(mOverlapOffsetDist * i);
+            childView.offsetTopAndBottom(mOverlapOffsetDist * i);
 
             // 按比例缩小
 //            final float scale = 1 - 0.06f * i;
 //            childView.setScaleX(scale);
 //            childView.setScaleY(scale);
         }
-
-        // 获取最顶层子视图原始位置坐标
-        mTopChildRawLeft = mChildrenViewList.get(0).getLeft();
-        mTopChildRawTop  = mChildrenViewList.get(0).getTop();
-
-        // 获取最顶层子视图原始宽度
-        mTopChildRawWidth = mChildrenViewList.get(0).getMeasuredWidth();
     }
 
     // 对View重新排序

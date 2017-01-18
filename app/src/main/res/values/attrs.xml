@@ -4,12 +4,11 @@
     <declare-styleable name="container">
 
         <attr
-            name="childMarginTop"
-            format="dimension"
+            name="android:gravity"
             />
 
         <attr
-            name="yOffsetDist"
+            name="overlapOffsetDist"
             format="dimension"
             />
 
