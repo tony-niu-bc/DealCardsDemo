@@ -30,9 +30,7 @@ public class CardsContainer extends ViewGroup {
     }
 
     // 从顶至底每一层的子视图
-    private List<CardsBase> mChildViewList = new ArrayList<>();
-    // 存放手指松开后的子视图
-    private List<View> mReleasedViewList = new ArrayList<>();
+    private List<CardsBase> mChildrenViewList = new ArrayList<>();
 
     // 在v4的支持包中提供了此类来帮助我们方便的编写自定义ViewGroup来处理拖动
     private final ViewDragHelper mDragHelper;
@@ -109,11 +107,11 @@ public class CardsContainer extends ViewGroup {
                                             new ViewDragHelper.Callback() {
             @Override
             public void onViewPositionChanged(View changedView, int left, int top, int dx, int dy) {
-                int index = mChildViewList.indexOf(changedView);
+                int index = mChildrenViewList.indexOf(changedView);
 
                 // 如不是子视图或为最后一个则无需处理
                 if ((-1 == index)
-                 || ((index + 1) >= mChildViewList.size())) {
+                 || ((index + 1) >= mChildrenViewList.size())) {
                     return;
                 }
 
@@ -132,26 +130,26 @@ public class CardsContainer extends ViewGroup {
                     rate2 = 1;
                 }
 
-                View underView = mChildViewList.get(index + 1);
+                View underView = mChildrenViewList.get(index + 1);
                 underView.offsetTopAndBottom(((int)(mYOffsetDist + (0 - mYOffsetDist) * rate1)) - underView.getTop() + mTopChildRawTop);
                 underView.setScaleX(0.94f + (0.06f * rate1));
                 underView.setScaleY(0.94f + (0.06f * rate1));
 
-                if ((index + 2) < mChildViewList.size()) {
-                    View underView2 = mChildViewList.get(index + 2);
+                if ((index + 2) < mChildrenViewList.size()) {
+                    View underView2 = mChildrenViewList.get(index + 2);
                     underView2.offsetTopAndBottom(((int)((mYOffsetDist * 2) + (0 - mYOffsetDist) * rate2)) - underView.getTop() + mTopChildRawTop);
                     underView2.setScaleX(0.88f + (0.06f * rate2));
                     underView2.setScaleY(0.88f + (0.06f * rate2));
                 }
 
-                CardsBase bottomCardView = mChildViewList.get(mChildViewList.size() - 1);
+                CardsBase bottomCardView = mChildrenViewList.get(mChildrenViewList.size() - 1);
                 bottomCardView.setAlpha(rate2);
             }
 
             @Override
             public boolean tryCaptureView(View child, int pointerId) {
                 // 只捕获拖动最顶部的子视图
-                if (mChildViewList.indexOf(child) != 0) {
+                if (mChildrenViewList.indexOf(child) != 0) {
                     return false;
                 }
 
@@ -211,8 +209,6 @@ public class CardsContainer extends ViewGroup {
                 }
                 // 移出消失
                 else {
-                    mReleasedViewList.add(releasedChild);
-
                     if (mDragHelper.smoothSlideViewTo(releasedChild, destX, destY)) {
                         ViewCompat.postInvalidateOnAnimation(CardsContainer.this);
                     }
@@ -235,21 +231,7 @@ public class CardsContainer extends ViewGroup {
     protected void onFinishInflate() {
         super.onFinishInflate();
 
-        mChildViewList.clear();
-
-        // 布局文件中后添加的子视图在显示时是在最上面的，
-        // 此处是以 Z 轴序自上而下取得子视图
-        for (int i = getChildCount(); i >= 0; i--) {
-            View childView = getChildAt(i);
-
-            if (childView instanceof CardsBase) {
-                ((CardsBase)childView).setParentView(this);
-
-                childView.setTag(i + 1);
-
-                mChildViewList.add((CardsBase)childView);
-            }
-        }
+        makeChildrenViewList();
     }
 
     @Override
@@ -261,7 +243,7 @@ public class CardsContainer extends ViewGroup {
         }
         // 动画结束
         else {
-            synchronized (this) {
+            synchronized(this) {
                 if (mDragHelper.getViewDragState() == ViewDragHelper.STATE_IDLE) {
                     sortChildren();
                 }
@@ -282,41 +264,15 @@ public class CardsContainer extends ViewGroup {
         return super.dispatchTouchEvent(ev);
     }
 
-    // touch事件的拦截与处理都交给mDraghelper来处理
+    // 在 onInterceptTouchEvent 和 onTouchEvent 里接管触摸方法
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        boolean shouldIntercept = mDragHelper.shouldInterceptTouchEvent(ev);
-        // 使用GestureDetectorCompat的onTouchEvent方法响应Touch事件
-        boolean moveFlag = mGestureDetectorCompat.onTouchEvent(ev);
-        int action = ev.getActionMasked();
-
-        if (action == MotionEvent.ACTION_DOWN) {
-            // ACTION_DOWN的时候就对view重新排序
-            if (mDragHelper.getViewDragState() == ViewDragHelper.STATE_SETTLING) {
-                mDragHelper.abort();
-            }
-
-            sortChildren();
-
-            // 保存初次按下时arrowFlagView的Y坐标
-            // action_down时就让mDragHelper开始工作，否则有时候导致异常
-            mDragHelper.processTouchEvent(ev);
-        }
-
-        return shouldIntercept && moveFlag;
+        return mDragHelper.shouldInterceptTouchEvent(ev);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        try {
-            // 统一交给mDragHelper处理，由DragHelperCallback实现拖动效果
-            // 该行代码可能会抛异常，正式发布时请将这行代码加上try catch
-            mDragHelper.processTouchEvent(e);
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
+        mDragHelper.processTouchEvent(e);
         return true;
     }
 
@@ -327,8 +283,8 @@ public class CardsContainer extends ViewGroup {
         int maxWidth  = MeasureSpec.getSize(widthMeasureSpec);
         int maxHeight = MeasureSpec.getSize(heightMeasureSpec);
 
-        setMeasuredDimension(resolveSizeAndState(maxWidth,  widthMeasureSpec,  0),
-                             resolveSizeAndState(maxHeight, heightMeasureSpec, 0));
+        setMeasuredDimension(resolveSizeAndState(maxWidth,  widthMeasureSpec,  MeasureSpec.UNSPECIFIED),
+                             resolveSizeAndState(maxHeight, heightMeasureSpec, MeasureSpec.UNSPECIFIED));
 
         mContainerWidth  = getMeasuredWidth();
         mContainerHeight = getMeasuredHeight();
@@ -336,83 +292,86 @@ public class CardsContainer extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        for (int i = 0; i < mChildViewList.size(); i++) {
-            View viewItem = mChildViewList.get(i);
-            int childHeight = viewItem.getMeasuredHeight();
-            int viewLeft = (int) ((getWidth() - viewItem.getMeasuredWidth()) / 2 + 2.5f);
+        adjustChildrenPosition();
+    }
 
-            int offset = mYOffsetDist * i;
-            viewItem.layout(viewLeft, mChildMarginTop, viewLeft + viewItem.getMeasuredWidth(), mChildMarginTop + childHeight);
+    // 形成子视图索引列表
+    private void makeChildrenViewList() {
+        mChildrenViewList.clear();
 
-            float scale = 1 - 0.06f * i;
-            if (i > 2) {
-                offset = mYOffsetDist * 2;
-                scale = 1 - 0.12f;
+        // 布局文件中后添加的子视图在显示时是在最上面的，
+        // 此处是以 Z 轴序自上而下取得子视图
+        for (int i = getChildCount(); i >= 0; i--) {
+            View childView = getChildAt(i);
+
+            if (childView instanceof CardsBase) {
+                ((CardsBase)childView).setParentView(this);
+
+                childView.setTag(i + 1);
+
+                mChildrenViewList.add((CardsBase)childView);
             }
+        }
+    }
 
-            viewItem.offsetTopAndBottom(offset);
-            viewItem.setScaleX(scale);
-            viewItem.setScaleY(scale);
+    // 调整子视图的位置
+    private void adjustChildrenPosition() {
+        final int parentLeft = getPaddingLeft();
+        final int parentTop  = getPaddingTop();
+
+        for (int i = 0; i < mChildrenViewList.size(); i++) {
+            View childView   = mChildrenViewList.get(i);
+
+            final int childWidth  = childView.getMeasuredWidth();
+            final int childHeight = childView.getMeasuredHeight();
+
+            childView.layout(parentLeft, parentTop, parentLeft + childWidth, parentTop + childHeight);
+
+            childView.offsetLeftAndRight(mYOffsetDist * i);
+            childView.offsetTopAndBottom(mYOffsetDist * i);
+
+            // 按比例缩小
+//            final float scale = 1 - 0.06f * i;
+//            childView.setScaleX(scale);
+//            childView.setScaleY(scale);
         }
 
-        // 获取子视图原始位置坐标
-        mTopChildRawLeft = mChildViewList.get(0).getLeft();
-        mTopChildRawTop = mChildViewList.get(0).getTop();
+        // 获取最顶层子视图原始位置坐标
+        mTopChildRawLeft = mChildrenViewList.get(0).getLeft();
+        mTopChildRawTop  = mChildrenViewList.get(0).getTop();
 
-        // 获取最后一个(最顶部)子视图原始宽度
-        mTopChildRawWidth = mChildViewList.get(0).getMeasuredWidth();
+        // 获取最顶层子视图原始宽度
+        mTopChildRawWidth = mChildrenViewList.get(0).getMeasuredWidth();
+    }
+
+    // 对View重新排序
+    private void sortChildren() {
+        synchronized(this) {
+            if (mTopChildRawLeft == mChildrenViewList.get(0).getLeft()) {
+                return;
+            }
+
+            // 调整子视图顺次
+            for (int i = mChildrenViewList.size() - 1; i > 0; i--) {
+                mChildrenViewList.get(i).bringToFront();
+            }
+
+            makeChildrenViewList();
+
+            adjustChildrenPosition();
+        }
     }
 
     // 外部控制最顶层子视图消失
     public void vanishTopChild(VanishTopChildMode vtcMode) {
         synchronized(this) {
-            View topChild = mChildViewList.get(0);
-
-            if (mReleasedViewList.contains(topChild)) {
-                return;
-            }
-
-            mReleasedViewList.add(topChild);
+            View topChild = mChildrenViewList.get(0);
 
             if (mDragHelper.smoothSlideViewTo(topChild,
                                               (VanishTopChildMode.VANISHING_TYPE_TO_LEFT == vtcMode) ? -mContainerWidth : mContainerWidth,
                                               mContainerHeight)) {
                 ViewCompat.postInvalidateOnAnimation(this);
             }
-        }
-    }
-
-    // 对View重新排序
-    private void sortChildren() {
-        synchronized(this) {
-            if (0 >= mReleasedViewList.size()) {
-                return;
-            }
-
-            CardsBase releasedView = (CardsBase)mReleasedViewList.get(0);
-            if (releasedView.getLeft() == mTopChildRawLeft) {
-                mReleasedViewList.remove(0);
-                return;
-            }
-
-            releasedView.offsetLeftAndRight(mTopChildRawLeft - releasedView.getLeft());
-            releasedView.offsetTopAndBottom(mTopChildRawTop  - releasedView.getTop() + mYOffsetDist * 2);
-
-            releasedView.setScaleX(0.88f);
-            releasedView.setScaleY(0.88f);
-            // 完全透明
-            releasedView.setAlpha(0);
-
-            // 调整子视图顺次
-            for (int i = mChildViewList.size() - 1; i > 0; i--) {
-                mChildViewList.get(i).setAlpha(1);
-                mChildViewList.get(i).bringToFront();
-            }
-
-            // 3. viewList中的卡片view的位次调整
-            mChildViewList.remove(releasedView);
-            mChildViewList.add(releasedView);
-            mReleasedViewList.remove(0);
         }
     }
 }
