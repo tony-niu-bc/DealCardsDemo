@@ -153,6 +153,7 @@ public class CardsContainer extends ViewGroup {
                     newTop  = newTop  - (itsOverlapOffsetDist * rateTopBottom);
 
                     Log.d("DealCardDemo",
+                          "onViewPositionChanged - " +
                           "i = " + i +
                           "\nrateLeftRight = " + rateLeftRight +
                           "\nrateTopBottom = " + rateTopBottom +
@@ -165,9 +166,6 @@ public class CardsContainer extends ViewGroup {
                                      (int)newTop,
                                      (int)newLeft + mTopChildRawWidth,
                                      (int)newTop  + mTopChildRawHight);
-
-                    childView.offsetLeftAndRight(mOverlapOffsetDist * i);
-                    childView.offsetTopAndBottom(mOverlapOffsetDist * i);
                 }
             }
 
@@ -319,39 +317,6 @@ public class CardsContainer extends ViewGroup {
         }
     }
 
-    // 调整子视图的位置
-    private void adjustChildrenPosition() {
-        int parentLeft = getPaddingLeft();
-        int parentTop  = getPaddingTop();
-
-        if (Gravity.CENTER == mGravity) {
-            // 叠层偏移延伸出的宽度
-            int overlapOffsetWidth = mOverlapOffsetDist * (mChildrenViewList.size() - 1);
-
-            parentLeft += (mContainerWidth  - getPaddingRight()  - mTopChildRawWidth - overlapOffsetWidth) / 2;
-            parentTop  += (mContainerHeight - getPaddingBottom() - mTopChildRawHight - overlapOffsetWidth) / 2;
-        }
-
-        for (int i = 0; i < mChildrenViewList.size(); i++) {
-            View childView   = mChildrenViewList.get(i);
-
-            // 每个子视图的宽高都是一样的，所以这里用了最顶层子视图的宽高
-            childView.layout(parentLeft, parentTop, parentLeft + mTopChildRawWidth, parentTop + mTopChildRawHight);
-
-            childView.offsetLeftAndRight(mOverlapOffsetDist * i);
-            childView.offsetTopAndBottom(mOverlapOffsetDist * i);
-
-            // 按比例缩小
-//            final float scale = 1 - 0.06f * i;
-//            childView.setScaleX(scale);
-//            childView.setScaleY(scale);
-        }
-
-        // 获取最顶层子视图原始位置坐标
-        mTopChildRawLeft = mChildrenViewList.get(0).getLeft();
-        mTopChildRawTop  = mChildrenViewList.get(0).getTop();
-    }
-
     // 对View重新排序
     private void sortChildren() {
         synchronized(this) {
@@ -368,6 +333,45 @@ public class CardsContainer extends ViewGroup {
 
             adjustChildrenPosition();
         }
+    }
+
+    // 调整子视图的位置
+    public void adjustChildrenPosition() {
+        int parentLeft = getPaddingLeft();
+        int parentTop  = getPaddingTop();
+
+        if (Gravity.CENTER == mGravity) {
+            // 叠层偏移延伸出的宽度
+            int overlapOffsetWidth = mOverlapOffsetDist * (mChildrenViewList.size() - 1);
+
+            parentLeft += (mContainerWidth  - getPaddingRight()  - mTopChildRawWidth - overlapOffsetWidth) / 2;
+            parentTop  += (mContainerHeight - getPaddingBottom() - mTopChildRawHight - overlapOffsetWidth) / 2;
+        }
+
+        for (int i = 0; i < mChildrenViewList.size(); i++) {
+            View childView   = mChildrenViewList.get(i);
+
+            Log.d("DealCardDemo",
+                  "adjustChildrenPosition - " +
+                  "\ni = " + i +
+                  "\nparentLeft = " + parentLeft +
+                  "\nparentTop = " + parentTop);
+
+            // 每个子视图的宽高都是一样的，所以这里用了最顶层子视图的宽高
+            childView.layout(parentLeft, parentTop, parentLeft + mTopChildRawWidth, parentTop + mTopChildRawHight);
+
+            childView.offsetLeftAndRight(mOverlapOffsetDist * i);
+            childView.offsetTopAndBottom(mOverlapOffsetDist * i);
+
+            // 按比例缩小
+//            final float scale = 1 - 0.06f * i;
+//            childView.setScaleX(scale);
+//            childView.setScaleY(scale);
+        }
+
+        // 获取最顶层子视图原始位置坐标
+        mTopChildRawLeft = mChildrenViewList.get(0).getLeft();
+        mTopChildRawTop  = mChildrenViewList.get(0).getTop();
     }
 
     // 外部控制最顶层子视图消失

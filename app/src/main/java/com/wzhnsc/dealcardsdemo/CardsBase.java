@@ -49,12 +49,22 @@ public class CardsBase extends FrameLayout {
             public void onSpringUpdate(Spring spring) {
                 CardsBase.this.offsetLeftAndRight(((int)spring.getCurrentValue()) - getLeft());
             }
+
+            @Override
+            public void onSpringAtRest(Spring spring) {
+                mParentView.adjustChildrenPosition();
+            }
         });
 
         mSpringY.addListener(new SimpleSpringListener() {
             @Override
             public void onSpringUpdate(Spring spring) {
                 CardsBase.this.offsetTopAndBottom(((int)spring.getCurrentValue()) - getTop());
+            }
+
+            @Override
+            public void onSpringAtRest(Spring spring) {
+                mParentView.adjustChildrenPosition();
             }
         });
     }
